@@ -1,64 +1,48 @@
 //create web server
-var express = require('express');
+var express = require("express");
 var app = express();
-var bodyParser = require('body-parser');
-var mongoose = require('mongoose');
-var Comment = require('./model/comments');
+var bodyParser = require("body-parser");
 
-// connect to database
-mongoose.connect('mongodb://localhost/comments', function (err) {
-    if (err) throw err;
-    console.log('Successfully connected');
+//set up body-parser
+app.use(bodyParser.urlencoded({extended: true}));
+
+//set up comments array
+var comments = [
+    {title: "Great place!", author: "Homer"},
+    {title: "Bad place!", author: "Bart"},
+    {title: "I don't know.", author: "Lisa"}
+];
+
+//set up ejs
+app.set("view engine", "ejs");
+
+//set up root route
+app.get("/", function(req, res) {
+    res.render("landing");
 });
 
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
-
-// Create a new comment in the database
-app.post('/comment', function (req, res) {
-    var newComment = Comment({
-        name: req.body.name,
-        comment: req.body.comment
-    });
-
-    newComment.save(function (err) {
-        if (err) throw err;
-        res.send('Success');
-    });
+//set up comments route
+app.get("/comments", function(req, res) {
+    res.render("comments", {comments: comments});
 });
 
-// Get a list of all comments in the database
-app.get('/comments', function (req, res) {
-    Comment.find({}, function (err, comments) {
-        if (err) throw err;
-        res.send(comments);
-    });
+//set up new route
+app.get("/comments/new", function(req, res) {
+    res.render("new");
 });
 
-// Get a single comment by id
-app.get('/comment/:id', function (req, res) {
-    Comment.findById(req.params.id, function (err, comment) {
-        if (err) throw err;
-        res.send(comment);
-    });
+//set up post route
+app.post("/comments", function(req, res) {
+    //get data from form and add to comments array
+    var title = req.body.title;
+    var author = req.body.author;
+    var newComment = {title: title, author: author};
+    comments.push(newComment);
+    //redirect back to comments page
+    res.redirect("/comments");
 });
 
-// Update a comment by id
-app.put('/comment/:id', function (req, res) {
-    Comment.findByIdAndUpdate(req.params.id, { $set: req.body }, function (err, comment) {
-        if (err) throw err;
-        res.send('Comment successfully updated!');
-    });
+//set up server
+app.listen(process.env.PORT, process.env.IP, function() {
+    console.log("Server has started!");
 });
-
-// Delete a comment by id
-app.delete('/comment/:id', function (req, res) {
-    Comment.findByIdAndRemove(req.params.id, function (err) {
-        if (err) throw err;
-        res.send('Comment successfully deleted!');
-    });
-});
-
-// Start the server
-app.listen(3000);
-console.log('Listening on port 3000');
